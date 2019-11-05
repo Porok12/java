@@ -23,4 +23,7 @@
 hs_err_pid*
 /bin/
 
+
 !/bin/logging.properties
+!./bin/logging.properties
+!logging.properties
