@@ -83,7 +83,6 @@ public class TCPServer {
 					clientSentence = inFromClient.readLine();
 					if (clientSentence != null) {
 						logger.info("RECEIVED: " + clientSentence);
-//						logger.info(Arrays.toString(clientSentence.chars().toArray()));
 						capitalizedSentence = clientSentence.toUpperCase() + '\n';
 						outToClient.writeBytes(capitalizedSentence);
 					}

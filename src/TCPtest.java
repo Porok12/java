@@ -18,23 +18,19 @@ public class TCPtest {
 	}
 
 	public static void main(String[] args) {
-		ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+		ClientSimulation simul = new ClientSimulation();
+		simul.startSimulation();
 		
-		// TCPClients
-		exec.scheduleAtFixedRate(() -> {
-			try {
-				TCPClient.main(null);
-			} catch (Exception e) {
-				logger.warning(e.getMessage());
-			}
-		}, 1, 5, TimeUnit.SECONDS);
-
-		// TCPServer
-		try {
-			TCPServer.main(null);
-		} catch (Exception e) {
-			logger.warning(e.getMessage());
-		}
+		System.out.println(TicketBuilder.getBuilder().setName("Bilet1").build());
+		System.out.println(TicketBuilder.getBuilder().setName("Bilet2").build());
+		System.out.println(TicketBuilder.getBuilder().setName("Bilet3").build());
+//		
+//		// TCPServer
+//		try {
+//			TCPServer.main(null);
+//		} catch (Exception e) {
+//			logger.warning(e.getMessage());
+//		}
 	}
 
 	private static final Logger logger = Logger.getLogger(TCPtest.class.getName());
