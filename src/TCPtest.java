@@ -18,19 +18,22 @@ public class TCPtest {
 	}
 
 	public static void main(String[] args) {
-		ClientSimulation simul = new ClientSimulation();
+		int port = 6568;
+		
+		// TCPClients
+		ClientSimulation simul = new ClientSimulation(port);
 		simul.startSimulation();
+		
+		// TCPServer
+		try {
+			TCPServer tcpServer = new TCPServer(port);
+		} catch (Exception e) {
+			logger.warning(e.getMessage());
+		}
 		
 		System.out.println(TicketBuilder.getBuilder().setName("Bilet1").build());
 		System.out.println(TicketBuilder.getBuilder().setName("Bilet2").build());
 		System.out.println(TicketBuilder.getBuilder().setName("Bilet3").build());
-//		
-//		// TCPServer
-//		try {
-//			TCPServer.main(null);
-//		} catch (Exception e) {
-//			logger.warning(e.getMessage());
-//		}
 	}
 
 	private static final Logger logger = Logger.getLogger(TCPtest.class.getName());

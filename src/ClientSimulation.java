@@ -7,15 +7,18 @@ import java.util.logging.Logger;
 public class ClientSimulation {
 	private final ScheduledExecutorService exec;
 	private static final Logger logger = Logger.getLogger(ClientSimulation.class.getName());
+	private int port;
 	
-	public ClientSimulation() {
+	public ClientSimulation(int port) {
+		this.port = port;
 		exec = Executors.newSingleThreadScheduledExecutor();
 	}
 	
 	public void startSimulation() {
 		exec.scheduleAtFixedRate(() -> {
 			try {
-				new TCPClient().reserveTicket();;
+				TCPClient client = new TCPClient(port);
+				client.reserveTicket();
 			} catch (Exception e) {
 				logger.warning(e.getMessage());
 			}

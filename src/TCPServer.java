@@ -8,27 +8,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.net.SocketFactory;
+
 //TODO: Lock
 //TODO: W³asne logi - watki
 //TODO: w¹tki klientow
 
 public class TCPServer {
 	// Methods / Constructors
-	public static void main(String argv[]) throws Exception {
-		new TCPServer();
-	}
-
-	public TCPServer() {
+	
+	public TCPServer(int port) {
 		try {
-			welcomeSocket = new ServerSocket(6722);
+			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
+			logger.severe(e.getMessage());
 			return;
 		}
 
-		while (!welcomeSocket.isClosed()) {
+		logger.info(serverSocket.toString());
+		while (!serverSocket.isClosed()) {
 			Socket socket = null;
 			try {
-				socket = welcomeSocket.accept();
+				socket = serverSocket.accept();
 			} catch (IOException e) {
 				logger.info(e.getMessage());
 				break;
@@ -39,22 +40,22 @@ public class TCPServer {
 		}
 
 		try {
-			welcomeSocket.close();
+			serverSocket.close();
 		} catch (IOException e) {
-			logger.info(e.getMessage());
+			logger.severe(e.getMessage());
 		}
 	}
 
 	private void getReservationList() {
-
+		
 	}
 
 	private void sendReservationList() {
-
+		
 	}
 
 	// Variables
-	private ServerSocket welcomeSocket;
+	private ServerSocket serverSocket;
 	private List<ReservationObject> tickets = new ArrayList<>();
 	private static List<ClientThread> clients = new ArrayList<>();
 	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
@@ -80,7 +81,9 @@ public class TCPServer {
 		public void run() {
 			try {
 				while (true) {
+					logger.info("wait");
 					clientSentence = inFromClient.readLine();
+					logger.info("after-wait");
 					if (clientSentence != null) {
 						logger.info("RECEIVED: " + clientSentence);
 						capitalizedSentence = clientSentence.toUpperCase() + '\n';
@@ -88,7 +91,7 @@ public class TCPServer {
 					}
 				}
 			} catch (IOException e) {
-				logger.info(e.getMessage());
+				logger.severe(e.getMessage());
 			} finally {
 				closeSocekt();
 			}
