@@ -146,13 +146,13 @@ public class TCPClient {
 			Socket clientSocket = new Socket("localhost", port);
 			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			this.outToServer = outToServer;
+			this.outToServer = outToServer2;
 		}
 		
 		@Override
 		public Void call() throws Exception {
 			outToServer.writeBytes("Test\n");
-			logger.info("Task called");
+			logger.info("SEND: Test");
 			return null;
 		}
 	}
