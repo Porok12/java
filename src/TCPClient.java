@@ -17,56 +17,36 @@ public class TCPClient {
 	private int port;
 	private static final Logger logger = Logger.getLogger(TCPClient.class.getName());
 	
-	public static void main(String argv[]) throws Exception {
-		new Thread(() -> {
-			try {
-				Socket clientSocket = new Socket("localhost", 6722);
-				DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
-				BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-				IntStream.range(0, 5).forEach((i) -> {
-					try {
-						String sentence = "Hello" + i + (char) (new Random().nextInt(24) + 68);
-						outToServer.writeBytes(sentence + '\n');
-						String modifiedSentence = inFromServer.readLine();
-						logger.info("FROM SERVER: " + modifiedSentence);
-						Thread.sleep(100);
-					} catch (InterruptedException | IOException e) {
-						logger.warning(e.getMessage());
-					}
-				});
-				
-				clientSocket.close();
-			} catch (Exception e) {
-				logger.warning(e.getMessage());
-			}
-		}).start();
-		
-		return;
-	}
-	
-	
 	public TCPClient(int port) {
 		this.port = port;
 	}
 	
 	public void reserveTicket() {
-//		Executors.newSingleThreadExecutor(
-//				new ReserveTicketFactory()).execute(
-//						new Task(new ReserveTicket()));
 		try {
-			//Socket clientSocket = new Socket("localhost", port);
-			//logger.info(clientSocket.toString());
-			//DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
-			//BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			Socket clientSocket = new Socket("localhost", port);
+			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
+			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			
+			new Thread(() -> {
+				String stringFromServer;
+				try {
+					inFromServer.lines().forEach((o) -> logger.info("FROM: " + o));
+					if (false) {
+						stringFromServer = inFromServer.readLine();
+						logger.info("FROM: "+stringFromServer);
+					}
+				} catch (IOException e) {
+					logger.severe(e.getMessage());
+				}
+			}).start();
 			
 			ThreadFactory threadFactory = new ReserveTicketFactory();
-			ReserveTicket callable = new ReserveTicket(null);
+			ReserveTicket callable = new ReserveTicket(outToServer2);
 			Task futureTask = new Task(callable);
 
-			//Executors.newSingleThreadExecutor(threadFactory).submit(futureTask);
+//			Executors.newSingleThreadExecutor(threadFactory).submit(futureTask);
 			Executors.newSingleThreadExecutor().execute(futureTask);
-//			Executors.newSingleThreadExecutor(threadFactory).execute(futureTask);
+//			Executors.newSingleThreadExecutor(Executors.defaultThreadFactory()).execute(futureTask);
 			
 //			Executors.newSingleThreadExecutor(
 //					new ReserveTicketFactory()).submit(
@@ -143,16 +123,16 @@ public class TCPClient {
 		
 		public ReserveTicket(DataOutputStream outToServer) throws UnknownHostException, IOException {
 			logger.info("ReserveTicket created "+port);
-			Socket clientSocket = new Socket("localhost", port);
-			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
-			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			this.outToServer = outToServer2;
+			this.outToServer = outToServer;
 		}
 		
 		@Override
 		public Void call() throws Exception {
-			outToServer.writeBytes("Test\n");
-			logger.info("SEND: Test");
+			for (int i = 1; i < 4; i++) {
+				Thread.sleep(300);
+				outToServer.writeBytes("Test"+i+"\n");
+				logger.info("SEND: Test"+i);
+			}
 			return null;
 		}
 	}

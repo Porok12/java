@@ -30,10 +30,6 @@ public class TCPtest {
 		} catch (Exception e) {
 			logger.warning(e.getMessage());
 		}
-		
-		System.out.println(TicketBuilder.getBuilder().setName("Bilet1").build());
-		System.out.println(TicketBuilder.getBuilder().setName("Bilet2").build());
-		System.out.println(TicketBuilder.getBuilder().setName("Bilet3").build());
 	}
 
 	private static final Logger logger = Logger.getLogger(TCPtest.class.getName());
