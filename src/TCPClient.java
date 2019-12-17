@@ -29,14 +29,16 @@ public class TCPClient {
 			
 			new Thread(() -> {
 				String stringFromServer;
-				try {
-					inFromServer.lines().forEach((o) -> logger.info("FROM: " + o));
-					if (false) {
-						stringFromServer = inFromServer.readLine();
-						logger.info("FROM: "+stringFromServer);
-					}
-				} catch (IOException e) {
-					logger.severe(e.getMessage());
+				while(true) {
+					try {
+						//inFromServer.lines().forEach((o) -> logger.info("Received from server: " + o));
+						if (true) {
+							stringFromServer = inFromServer.readLine();
+							logger.info("Received from server: "+stringFromServer);
+						}
+					} catch (IOException e) {
+						logger.severe(e.getMessage());
+					}	
 				}
 			}).start();
 			
@@ -45,9 +47,9 @@ public class TCPClient {
 			Task futureTask = new Task(callable);
 
 //			Executors.newSingleThreadExecutor(threadFactory).submit(futureTask);
-			Executors.newSingleThreadExecutor().execute(futureTask);
+//			Executors.newSingleThreadExecutor().execute(futureTask);
 //			Executors.newSingleThreadExecutor(Executors.defaultThreadFactory()).execute(futureTask);
-			
+			Executors.newSingleThreadExecutor(threadFactory).execute(futureTask);
 //			Executors.newSingleThreadExecutor(
 //					new ReserveTicketFactory()).submit(
 //							new Task(new ReserveTicket(outToServer)));
@@ -58,24 +60,16 @@ public class TCPClient {
 	}
 	
 	class ReserveTicketFactory implements ThreadFactory {
-//		private Socket clientSocket;
-		
-//		@Override
-//		public Thread newThread(Runnable r) {
-//			logger.info("Thread created");
-//			try {
-//				return new T(r);
-//			} catch (Exception e) {
-//				logger.severe(e.getMessage());
-//			}
-//			return new Thread(r);
-//		}
-		
 		@Override
 		public Thread newThread(Runnable r) {
 			logger.info("Thread created");
 			try {
-				return new T(r);
+				Thread t = new T(r);
+				t.setName("name:"+new Random().nextInt());
+				t.setPriority(Thread.NORM_PRIORITY);
+				t.setDaemon(false);
+//				new Thread().setName("name:"+new Random().nextInt());
+				return new Thread(r);
 			} catch (Exception e) {
 				logger.severe(e.getMessage());
 			}
@@ -84,26 +78,15 @@ public class TCPClient {
 		
 		class T extends Thread {
 			private Runnable runnable;
-//			private Callable<Void> callable;
 			
 			public T(Runnable runnable) {
 				this.runnable = runnable;
 			}
 			
-//			public T(Callable<Void> callable) {
-//				this.callable = callable;
-//			}
-			
 			@Override
 			public void start() {
-//				runnable.run();
-//				if (callable == null) {
-//					logger.info("NULL");
-//				}
-				
 				try {
 					runnable.run();
-//					callable.call();
 				} catch (Exception e) {
 					logger.severe(e.toString());
 				}
@@ -129,9 +112,9 @@ public class TCPClient {
 		@Override
 		public Void call() throws Exception {
 			for (int i = 1; i < 4; i++) {
-				Thread.sleep(300);
+				Thread.sleep(2000);
 				outToServer.writeBytes("Test"+i+"\n");
-				logger.info("SEND: Test"+i);
+				logger.info("Write to server: Test"+i);
 			}
 			return null;
 		}

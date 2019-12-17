@@ -5,25 +5,40 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
 import javax.net.SocketFactory;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 //TODO: Lock
 //TODO: W³asne logi - watki !!!
-//TODO: w¹tki klientow
 
 public class TCPServer {
 	// Methods / Constructors
 	
+	Lock lock = new ReentrantLock();// utworzenie rygla
+	int iterator = 0;
 	
 	
 	
 	public TCPServer(int port) {
-//		List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
-//		ticketList.add(TicketBuilder.getBuilder().setName("Ticket1").build());
+		List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
+		ticketList.add(TicketBuilder.getBuilder().setName("Ticket1").build());
+		ticketList.add(TicketBuilder.getBuilder().setName("Ticket2").build());
+		ticketList.add(TicketBuilder.getBuilder().setName("Ticket3").build());
+		
+		ReentrantLock locks[] = new ReentrantLock[3];
+		Arrays.fill(locks, new ReentrantLock());
+		
+		
+		//TODO:
+		lock.lock();
+		lock.unlock();
+		
 		
 		
 		
@@ -39,6 +54,7 @@ public class TCPServer {
 			Socket socket = null;
 			try {
 				socket = serverSocket.accept();
+				logger.info("Socket accepted: " + serverSocket.toString());
 			} catch (IOException e) {
 				logger.info(e.getMessage());
 				break;
@@ -87,26 +103,22 @@ public class TCPServer {
 		}
 
 		@Override
+		@SuppressWarnings("unused")
 		public void run() {
 			try {
-				clientSentence = inFromClient.readLine();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			
-			try {
 				while (true) {
-					inFromClient.lines().forEach((o) -> {
-						logger.info("RECEIVED: " + o);
-						capitalizedSentence = clientSentence.toUpperCase() + '\n';
+						inFromClient.lines().forEach((o) -> {
+						clientSentence = o;
+						logger.info("Received from client: " + o);
+						capitalizedSentence = clientSentence.toUpperCase();
 						try {
-							outToClient.writeBytes(capitalizedSentence);
+							logger.info("Send back: " + capitalizedSentence);
+							outToClient.writeBytes(capitalizedSentence + '\n');
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							logger.severe(e.getMessage());
 						}
 					});
+						
 					if (false) {
 						clientSentence = inFromClient.readLine();
 						if (clientSentence != null) {
@@ -116,7 +128,7 @@ public class TCPServer {
 						} else {
 							logger.info("RECEIVED: NULL");
 						}
-					} 
+					}
 				}
 			} catch (IOException e) {
 				logger.severe(e.getMessage());
