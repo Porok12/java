@@ -19,6 +19,7 @@ public class TCPtest {
 
 	public static void main(String[] args) {
 		int port = 6568;
+		SwingTest.main(args);
 		
 		// TCPClients
 		ClientSimulation simul = new ClientSimulation(port);
@@ -30,6 +31,7 @@ public class TCPtest {
 		} catch (Exception e) {
 			logger.warning(e.getMessage());
 		}
+		
 	}
 
 	private static final Logger logger = Logger.getLogger(TCPtest.class.getName());

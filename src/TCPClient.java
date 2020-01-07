@@ -27,7 +27,17 @@ public class TCPClient {
 			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			
+			outToServer2.writeBytes("Hello\n");
+			
 			new Thread(() -> {
+				String fromServer;
+				try {
+					fromServer = inFromServer.readLine();
+					System.out.println(fromServer);
+				} catch (IOException e1) {
+					logger.severe(e1.getMessage());
+				}
+				
 				String stringFromServer;
 				while(true) {
 					try {

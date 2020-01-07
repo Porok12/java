@@ -19,29 +19,23 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TCPServer {
 	// Methods / Constructors
-	
+
 	Lock lock = new ReentrantLock();// utworzenie rygla
 	int iterator = 0;
-	
-	
-	
+
+	List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
 	public TCPServer(int port) {
-		List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket1").build());
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket2").build());
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket3").build());
-		
+
 		ReentrantLock locks[] = new ReentrantLock[3];
 		Arrays.fill(locks, new ReentrantLock());
-		
-		
-		//TODO:
+
+		// TODO:
 		lock.lock();
 		lock.unlock();
-		
-		
-		
-		
+
 		try {
 			serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
@@ -71,23 +65,20 @@ public class TCPServer {
 		}
 	}
 
-	private void getReservationList() {
-		
-	}
-
-	private void sendReservationList() {
-		
-	}
-
 	// Variables
 	private ServerSocket serverSocket;
 	private List<ReservationObject> tickets = new ArrayList<>();
 	private static List<ClientThread> clients = new ArrayList<>();
 	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
 
+	private static int counter = 0;
+
 	// Classes
 	class ClientThread extends Thread {
+		private int inner;
+
 		ClientThread(Socket socket) {
+			inner = counter++;
 			this.socket = socket;
 			try {
 				inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -103,39 +94,29 @@ public class TCPServer {
 		}
 
 		@Override
-		@SuppressWarnings("unused")
 		public void run() {
 			try {
 				while (true) {
-						inFromClient.lines().forEach((o) -> {
+					inFromClient.lines().forEach((o) -> {
 						clientSentence = o;
 						logger.info("Received from client: " + o);
+						SwingTest.myArea.append(String.format("Received from client%d: %s\n", inner, o));
 						capitalizedSentence = clientSentence.toUpperCase();
 						try {
-							logger.info("Send back: " + capitalizedSentence);
-							outToClient.writeBytes(capitalizedSentence + '\n');
+							if (capitalizedSentence.matches("(?i)HELLO.*")) {
+								logger.info("Send back: " + ticketList.toString() + '\n');
+								outToClient.writeBytes(ticketList.toString());
+							} else {
+								logger.info("Send back: " + capitalizedSentence);
+								outToClient.writeBytes(capitalizedSentence + '\n');
+							}
 						} catch (IOException e) {
 							logger.severe(e.getMessage());
 						}
 					});
-						
-					if (false) {
-						clientSentence = inFromClient.readLine();
-						if (clientSentence != null) {
-							logger.info("RECEIVED: " + clientSentence);
-							capitalizedSentence = clientSentence.toUpperCase() + '\n';
-							outToClient.writeBytes(capitalizedSentence);
-						} else {
-							logger.info("RECEIVED: NULL");
-						}
-					}
 				}
-			} catch (IOException e) {
-				logger.severe(e.getMessage());
 			} finally {
-				if(closeSocekt()) {
-					logger.info("socket closed");
-				}
+				closeSocekt();
 			}
 		}
 
@@ -146,10 +127,11 @@ public class TCPServer {
 				logger.info(e.getMessage());
 			}
 		}
-		
+
 		private boolean closeSocekt() {
 			try {
 				socket.close();
+				logger.info("socket closed");
 				return true;
 			} catch (IOException e) {
 				logger.info(e.getMessage());

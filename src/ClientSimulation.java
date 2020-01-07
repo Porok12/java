@@ -22,7 +22,7 @@ public class ClientSimulation {
 			} catch (Exception e) {
 				logger.warning(e.getMessage());
 			}
-		}, 1, 5, TimeUnit.SECONDS);
+		}, 1, 2, TimeUnit.SECONDS);
 	}
 	
 	public void abortSimulation() {
