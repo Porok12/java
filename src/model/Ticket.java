@@ -1,3 +1,4 @@
+package model;
 
 public class Ticket {
 	private String name;
@@ -32,9 +33,9 @@ public class Ticket {
 	public String toString() {
 		return String.format("name: %s", name);
 	}
-}
-
-enum Status {
-	AVAILABLE,
-	RESERVED
+	
+	public static enum Status {
+		AVAILABLE,
+		RESERVED
+	}
 }

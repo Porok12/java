@@ -1,3 +1,4 @@
+package main;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.util.logging.Logger;
@@ -29,7 +30,7 @@ public class SwingTest {
 		frame.setSize(800, 600);
 		frame.setLayout(null);
 		frame.setVisible(true);
-		frame.setTitle("Programowanie w jêzyku Java");
+		frame.setTitle("Programowanie w jï¿½zyku Java");
 		
 		frame.addWindowListener(new WindowListener() {
 			@Override

@@ -1,3 +1,4 @@
+package main;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -83,21 +84,21 @@ public class JDBCtest {
 	            System.out.println();
 	        }
 	    } catch (SQLException e) {
-	        System.out.println("Bl¹d odczytu z bazy! " + e.toString());
+	        System.out.println("Blï¿½d odczytu z bazy! " + e.toString());
 	        System.exit(3);
 	    }
 	}
 	
 	private static void closeConnection(Connection connection, Statement s) {
-	    System.out.print("\nZamykanie polaczenia z baza¹:");
+	    System.out.print("\nZamykanie polaczenia z bazaï¿½:");
 	    try {
 	        s.close();
 	        connection.close();
 	    } catch (SQLException e) {
 	        System.out
-	                .println("Bl¹d przy zamykaniu pol¹czenia " + e.toString());
+	                .println("Blï¿½d przy zamykaniu polï¿½czenia " + e.toString());
 	        System.exit(4);
 	    }
-	    System.out.print(" zamkniêcie OK");
+	    System.out.print(" zamkniï¿½cie OK");
 	}
 }

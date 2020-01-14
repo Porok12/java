@@ -1,15 +1,19 @@
+package main;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class ClientSimulation {
+import client.TCPClient;
+
+public class ClientGenrator {
+	private static final Logger logger = Logger.getLogger(ClientGenrator.class.getName());
+	private static final int CREATE_RATE = 2; // [s]
 	private final ScheduledExecutorService exec;
-	private static final Logger logger = Logger.getLogger(ClientSimulation.class.getName());
 	private int port;
 	
-	public ClientSimulation(int port) {
+	public ClientGenrator(int port) {
 		this.port = port;
 		exec = Executors.newSingleThreadScheduledExecutor();
 	}
@@ -22,7 +26,7 @@ public class ClientSimulation {
 			} catch (Exception e) {
 				logger.warning(e.getMessage());
 			}
-		}, 1, 2, TimeUnit.SECONDS);
+		}, 1, CREATE_RATE, TimeUnit.SECONDS);
 	}
 	
 	public void abortSimulation() {
