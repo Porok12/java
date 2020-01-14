@@ -13,7 +13,7 @@ public class TCPtest {
 		try {
 			LogManager.getLogManager().readConfiguration(stream);
 		} catch (SecurityException | IOException e) {
-			e.printStackTrace();
+			e.printStackTrace(); 
 		}
 	}
 
@@ -29,9 +29,8 @@ public class TCPtest {
 		try {
 			TCPServer tcpServer = new TCPServer(port);
 		} catch (Exception e) {
-			logger.warning(e.getMessage());
+			logger.severe(e.getMessage());
 		}
-		
 	}
 
 	private static final Logger logger = Logger.getLogger(TCPtest.class.getName());

@@ -8,42 +8,55 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.SocketFactory;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 //TODO: Lock
 //TODO: W³asne logi - watki !!!
 
 public class TCPServer {
-	// Methods / Constructors
-
-	Lock lock = new ReentrantLock();// utworzenie rygla
-	int iterator = 0;
-
-	List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
+	private Lock lock = new ReentrantLock();
+	private List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
+	private Ticket[] ticketArray = new Ticket[MAX_TICKETS];
+	private int iterator = 0;
+	private ServerSocket serverSocket;
+	private static final int MAX_TICKETS = 3;
+	private static List<ClientThread> clients = new ArrayList<>();
+	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
+	private static int counter = 0;
+	
+	
+	{
+//		ReentrantReadWriteLock l = new ReentrantReadWriteLock();
+//		l.writeLock();
+//		ReentrantLock l = new ReentrantLock();
+//		l.newCondition();
+	}
+	
 	public TCPServer(int port) {
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket1").build());
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket2").build());
 		ticketList.add(TicketBuilder.getBuilder().setName("Ticket3").build());
 
+		// ReentrantReadWriteLock
 		ReentrantLock locks[] = new ReentrantLock[3];
 		Arrays.fill(locks, new ReentrantLock());
 
-		// TODO:
-		lock.lock();
-		lock.unlock();
-
 		try {
 			serverSocket = new ServerSocket(port);
-		} catch (IOException e) {
+		} catch (IOException e) { 
 			logger.severe(e.getMessage());
 			return;
 		}
 
 		logger.info(serverSocket.toString());
+		
 		while (!serverSocket.isClosed()) {
 			Socket socket = null;
 			try {
@@ -57,23 +70,26 @@ public class TCPServer {
 			clients.add(clientThread);
 			clientThread.start();
 		}
-
+		
 		try {
 			serverSocket.close();
 		} catch (IOException e) {
 			logger.severe(e.getMessage());
 		}
 	}
-
-	// Variables
-	private ServerSocket serverSocket;
-	private List<ReservationObject> tickets = new ArrayList<>();
-	private static List<ClientThread> clients = new ArrayList<>();
-	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
-
-	private static int counter = 0;
-
-	// Classes
+	
+	private void reserveTicket(int tickerNumber) {
+		if (tickerNumber < MAX_TICKETS && tickerNumber >= 0) {
+			lock.lock();
+			
+			try {
+				ticketArray[tickerNumber].setStatus(Status.RESERVED);
+			} finally {
+				lock.unlock();
+			}
+		}
+	}
+	
 	class ClientThread extends Thread {
 		private int inner;
 
@@ -106,11 +122,19 @@ public class TCPServer {
 							if (capitalizedSentence.matches("(?i)HELLO.*")) {
 								logger.info("Send back: " + ticketList.toString() + '\n');
 								outToClient.writeBytes(ticketList.toString());
+								
+								Pattern pattern = Pattern.compile("(?:reserve)([0-9]+)");
+								Matcher matcher = pattern.matcher(clientSentence);
+								if (matcher.matches()) {
+									int ticketId = Integer.valueOf(matcher.group(1));
+									reserveTicket(ticketId);
+								}
+								
 							} else {
 								logger.info("Send back: " + capitalizedSentence);
 								outToClient.writeBytes(capitalizedSentence + '\n');
 							}
-						} catch (IOException e) {
+						} catch (IOException | NumberFormatException e) {
 							logger.severe(e.getMessage());
 						}
 					});
@@ -145,17 +169,4 @@ public class TCPServer {
 		private BufferedReader inFromClient;
 		private DataOutputStream outToClient;
 	}
-}
-
-class ReservationObject {
-	public ReservationObject() {
-		property1 = new Integer(0);
-	}
-
-	@Override
-	public String toString() {
-		return property1.toString();
-	}
-
-	private Object property1;
 }

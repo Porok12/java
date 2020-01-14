@@ -44,10 +44,10 @@ public class TCPClient {
 						//inFromServer.lines().forEach((o) -> logger.info("Received from server: " + o));
 						if (true) {
 							stringFromServer = inFromServer.readLine();
-							logger.info("Received from server: "+stringFromServer);
+							logger.info(String.format("Received from server: %s", stringFromServer));
 						}
 					} catch (IOException e) {
-						logger.severe(e.getMessage());
+						logger.severe(e.getMessage()); 
 					}	
 				}
 			}).start();
@@ -115,7 +115,7 @@ public class TCPClient {
 		private DataOutputStream outToServer;
 		
 		public ReserveTicket(DataOutputStream outToServer) throws UnknownHostException, IOException {
-			logger.info("ReserveTicket created "+port);
+			logger.info(String.format("ReserveTicket created %d", port));
 			this.outToServer = outToServer;
 		}
 		
@@ -123,8 +123,8 @@ public class TCPClient {
 		public Void call() throws Exception {
 			for (int i = 1; i < 4; i++) {
 				Thread.sleep(2000);
-				outToServer.writeBytes("Test"+i+"\n");
-				logger.info("Write to server: Test"+i);
+				outToServer.writeBytes(String.format("Test%d\n", i));
+				logger.info(String.format("Write to server: Test%d", i));
 			}
 			return null;
 		}

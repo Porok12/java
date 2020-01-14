@@ -13,8 +13,7 @@ public class SwingTest {
 		JFrame frame = new JFrame();
 
 		JButton b = new JButton("click");
-		b.setBounds(130, 100, 100, 40);
-		
+		b.setBounds(130, 100, 100, 40); 
 		
 //	    myArea.setAutoscrolls(true);
 		DefaultCaret caret = (DefaultCaret) myArea.getCaret();

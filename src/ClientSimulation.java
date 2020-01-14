@@ -15,7 +15,7 @@ public class ClientSimulation {
 	}
 	
 	public void startSimulation() {
-		exec.scheduleAtFixedRate(() -> {
+		exec.scheduleAtFixedRate(() -> { 
 			try {
 				TCPClient client = new TCPClient(port);
 				client.reserveTicket();
