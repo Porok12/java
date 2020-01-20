@@ -5,24 +5,45 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import main.SwingTest;
+import GUI.SwingDemo;
+import dao.UserDao;
+import model.Group;
 
 public class ClientThread extends Thread {
 	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
 	private int inner;
-	private int iterator = 0;
 	private static int counter = 0;
 	
-	Pattern reservePattern = Pattern.compile("(?i)(?:reserve):([0-9]+)");
-	Pattern helloPattern = Pattern.compile("(?i)(?:hello):([a-zA-Z]+)");
+	private String clientSentence;
+	private Socket socket;
+	private BufferedReader inFromClient;
+	private DataOutputStream outToClient;
+	
+	private static final Pattern reservePattern = Pattern.compile("(?i)(?:reserve):([0-9]+)");
+	private static final Pattern helloPattern = Pattern.compile("(?i)(?:hello):([a-zA-Z]+)");
+	private static final Pattern byePattern = Pattern.compile("(?i)bye");
+	
+	private Group[] groups;
+	private TCPServer server;
+	private String login;
 
-	ClientThread(Socket socket) {
+	ClientThread(Socket socket, Group[] groups, TCPServer tcpServer) {
 		inner = counter++;
 		this.socket = socket;
+		this.groups = groups;
+		this.server = tcpServer;
+		
 		try {
 			inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			outToClient = new DataOutputStream(socket.getOutputStream());
@@ -37,40 +58,58 @@ public class ClientThread extends Thread {
 	}
 
 	@Override
-	public void run() {		
+	public void run() {
+		Boolean[] close = new Boolean[] { false };
 		try {
-			while (true) {
+			while (!close[0]) { // !socket.isClosed()
 				inFromClient.lines().forEach((o) -> {
 					Matcher matcher;
+					
 					clientSentence = o;
 					logger.info("Received from client: " + o);
-					SwingTest.myArea.append(String.format("Received from client%d: %s\n", inner, o));
-					capitalizedSentence = clientSentence.toUpperCase();
+					SwingDemo.myArea.append(String.format("Received from client%d: %s\n", inner, o));
 					try {
-//						if (capitalizedSentence.matches("(?i)HELLO.*")) {
-////							logger.info("Send back: " + ticketList.toString() + '\n');
-////							outToClient.writeBytes(ticketList.toString());
-//							
-//						} else {
-////							logger.info("Send back: " + capitalizedSentence);
-////							outToClient.writeBytes(capitalizedSentence + '\n');
-//						}
-						
-						matcher = reservePattern.matcher(clientSentence);
-						if (matcher.find()) {
-							int ticketId = Integer.valueOf(matcher.group(1));
-							logger.info(String.format("%d", ticketId));
-//							reserveTicket(ticketId);
-						}
 						
 						matcher = helloPattern.matcher(clientSentence);
 						if (matcher.find()) {
 							String login = matcher.group(1);
-							logger.warning(String.format("%s", login));
-//							reserveTicket(ticketId);
+							logger.info(String.format("login: %s", login));
+							
+							UserDao userDao = new UserDao();
+							if (userDao.getUser(login).isPresent()) {
+								Stream<Group> stream = Arrays.stream(groups);
+								List<Group> list = stream
+										.filter(t -> t.getStatus() == Group.Status.AVAILABLE)
+										.collect(Collectors.toList());
+								outToClient.writeBytes(Arrays.toString(list.toArray()) + '\n');
+								this.login = login;
+							} else {
+								outToClient.writeBytes("[]\n");
+								close[0] = true;
+							}
 						}
 						
-					} catch (NumberFormatException e) { // IOException | 
+						matcher = reservePattern.matcher(clientSentence);
+						if (matcher.find()) {
+							int groupId = Integer.valueOf(matcher.group(1));
+							logger.info(String.format("%d>%d", inner, groupId));
+							if (server.notEmpty(groupId)) {
+								if (server.addUserToGroup(groupId, login)) {
+									outToClient.writeBytes(String.format("ok%d", groupId) + '\n');									
+								} else {
+									outToClient.writeBytes(String.format("sorry\n"));			
+								}
+							}
+						}
+						
+						matcher = byePattern.matcher(clientSentence);
+						if (matcher.find()) {
+							logger.info("bye");
+							server.getClientsQueue().remove(this);						
+							close[0] = true;
+						}
+						
+					} catch (IOException | NumberFormatException e) {
 						logger.severe(e.getMessage());
 					}
 				});
@@ -91,17 +130,9 @@ public class ClientThread extends Thread {
 	private boolean closeSocekt() {
 		try {
 			socket.close();
-			logger.info("socket closed");
 			return true;
 		} catch (IOException e) {
-			logger.info(e.getMessage());
 			return false;
 		}
 	}
-
-	private String clientSentence;
-	private String capitalizedSentence;
-	private Socket socket;
-	private BufferedReader inFromClient;
-	private DataOutputStream outToClient;
 }

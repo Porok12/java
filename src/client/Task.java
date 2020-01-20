@@ -9,6 +9,10 @@ public class Task extends FutureTask<Void> {
 	
 	public Task(Callable<Void> arg0) {
 		super(arg0);
-		logger.info("Task created");
+	}
+
+	@Override
+	public void run() {
+		super.run();
 	}
 }

@@ -9,48 +9,44 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Observable;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.SocketFactory;
 
-import main.SwingTest;
-import model.Ticket;
-import model.TicketBuilder;
-import model.Ticket.Status;
+import GUI.SwingDemo;
+import model.Group;
+import model.GroupBuilder;
+import model.Group.Status;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TCPServer {
 	private static final Logger logger = Logger.getLogger(TCPServer.class.getName());
-	private static final int MAX_TICKETS = 3;
-	private static List<ClientThread> clients = new ArrayList<>();
-	private Lock lock = new ReentrantLock();
-	private List<Ticket> ticketList = new CopyOnWriteArrayList<Ticket>();
-	private Ticket[] ticketArray = new Ticket[MAX_TICKETS];
+	private final int GROUPS;
+	private final int MAX_SLOTS;
+	private final int TIMEOUT;
+	private Group[] ticketArray;
 	private ServerSocket serverSocket;
+	private BlockingQueue<ClientThread> clientsQueue;
+	private ReadWriteLock rwlock;
+	private TCPServer server;
 	
-	private static final int MAX_SLOTS = 4;
-	private BlockingQueue<ClientThread> clientsQueue = new ArrayBlockingQueue<ClientThread>(MAX_SLOTS);
-	
-	
-	{
-//		ReentrantReadWriteLock l = new ReentrantReadWriteLock();
-//		l.writeLock();
-//		ReentrantLock l = new ReentrantLock();
-//		l.newCondition();
-	}
-	
-	public TCPServer(int port) {
-		ticketList.add(TicketBuilder.getBuilder().setName("Ticket1").build());
-		ticketList.add(TicketBuilder.getBuilder().setName("Ticket2").build());
-		ticketList.add(TicketBuilder.getBuilder().setName("Ticket3").build());
-
-		// ReentrantReadWriteLock
-		ReentrantLock locks[] = new ReentrantLock[3];
-		Arrays.fill(locks, new ReentrantLock());
+	public TCPServer(int port, int groups, int capacity, int slots, int timeout) {
+		GROUPS = groups;
+		MAX_SLOTS = slots;
+		TIMEOUT = timeout;
+		ticketArray = new Group[GROUPS];
+		rwlock = new ReentrantReadWriteLock();
+		
+		clientsQueue = new ArrayBlockingQueue<ClientThread>(MAX_SLOTS);
+		for (int i = 0; i < GROUPS; i++) {
+			ticketArray[i] = new GroupBuilder().setId(i).setCapacity(capacity).buildAndAddToSwing();
+		}
 
 		try {
 			serverSocket = new ServerSocket(port);
@@ -60,9 +56,24 @@ public class TCPServer {
 		}
 
 		logger.info(serverSocket.toString());
+		
+		server = this;
+	}
+	
+	public BlockingQueue<ClientThread> getClientsQueue() {
+		return clientsQueue;
 	}
 	
 	public void start() {
+		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+		scheduler.scheduleAtFixedRate(() -> {
+			ClientThread client = clientsQueue.poll(); 
+			if (client != null) {
+				logger.warning("Client polled");
+				client.interrupt();
+			}
+		}, TIMEOUT, TIMEOUT, TimeUnit.SECONDS);
+		
 		while (!serverSocket.isClosed()) {
 			try {
 				Socket socket = serverSocket.accept();
@@ -78,16 +89,34 @@ public class TCPServer {
 		closeSocket();
 	}
 	
-	private void reserveTicket(int tickerNumber) {
-		if (tickerNumber < MAX_TICKETS && tickerNumber >= 0) {
-			lock.lock();
-			
-			try {
-				ticketArray[tickerNumber].setStatus(Status.RESERVED);
-			} finally {
-				lock.unlock();
-			}
+	public boolean notEmpty(int ticketId) {
+		Lock readLock = rwlock.readLock();
+		readLock.lock();
+		try {
+			Thread.sleep(1000);
+			return ticketArray[ticketId].getStatus() == Group.Status.AVAILABLE;
+		} catch (InterruptedException e) {
+			logger.info(e.getMessage());
+		} finally {
+			readLock.unlock();
 		}
+		
+		return false;
+	}
+	
+	public boolean addUserToGroup(int ticketId, String login) {
+		Lock writeLock = rwlock.writeLock();
+		writeLock.lock();
+		try {
+			Thread.sleep(1000);
+			return ticketArray[ticketId].addUser(login);
+		} catch (InterruptedException e) {
+			logger.info(e.getMessage());
+		} finally {
+			writeLock.unlock();
+		}
+		
+		return false;
 	}
 	
 	private void addClient(Socket socket) {
@@ -95,10 +124,11 @@ public class TCPServer {
 			new FutureTask<Void>(new Callable<Void>() {
 				@Override
 				public Void call() throws Exception {
-					ClientThread clientThread = new ClientThread(socket);
-					clientsQueue.add(new ClientThread(socket));
+					ClientThread clientThread = new ClientThread(socket, ticketArray, server);
+					clientsQueue.put(clientThread);
 					logger.info("Client added");
 					clientThread.start();
+					
 					return Void.TYPE.newInstance();
 				}
 			}).run();

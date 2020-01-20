@@ -1,27 +1,43 @@
 package main;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import client.TCPClient;
+import dao.UserDao;
 
 public class ClientGenrator {
 	private static final Logger logger = Logger.getLogger(ClientGenrator.class.getName());
-	private static final int CREATE_RATE = 2; // [s]
+	private final int CREATE_RATE; // [s]
 	private final ScheduledExecutorService exec;
 	private int port;
+	private List<String> userNames;
 	
-	public ClientGenrator(int port) {
+	public ClientGenrator(int port, int clientRate) {
+		CREATE_RATE = clientRate;
+		
+		UserDao userDao = new UserDao();
+		userDao.delete();
+		userDao.fill();
+		userNames = userDao.getAll();
+		
 		this.port = port;
 		exec = Executors.newSingleThreadScheduledExecutor();
 	}
 	
 	public void startSimulation() {
-		exec.scheduleAtFixedRate(() -> { 
+		exec.scheduleAtFixedRate(() -> {
 			try {
-				TCPClient client = new TCPClient(port);
+				String login;
+				if (new Random().nextInt(9) != 1) {
+					login = userNames.get(new Random().nextInt(userNames.size()));
+				} else {
+					login = "Random";
+				}
+				TCPClient client = new TCPClient(port, login);
 				client.reserveTicket();
 			} catch (Exception e) {
 				logger.warning(e.getMessage());

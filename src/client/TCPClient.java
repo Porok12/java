@@ -5,21 +5,39 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+import model.Group;
+import model.GroupBuilder;
+
 public class TCPClient {
-	private static final Logger logger = Logger.getLogger(TCPClient.class.getName());
-	private int port;
 	
-	public TCPClient(int port) {
+	private volatile boolean waitForReponse = true;
+
+	private static final Logger logger = Logger.getLogger(TCPClient.class.getName());
+	private static final Pattern ticketPattern = Pattern.compile("(?i)Ticket([0-9]+)");
+	private static final Pattern okPattern = Pattern.compile("(?i)ok([0-9]+)");
+	private List<Group> tickets = new ArrayList<>();
+	
+	private int port;
+	private String login;
+	private boolean abort;
+	
+	public TCPClient(int port, String login) {
 		this.port = port;
+		this.login = login;
 	}
 	
 	public void reserveTicket() {
@@ -27,14 +45,28 @@ public class TCPClient {
 			Socket clientSocket = new Socket("localhost", port);
 			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			ThreadFactory threadFactory = new ReservationFactory();
+			Reservation callable = new Reservation(outToServer2, port, tickets);
+			Task futureTask = new Task(callable);
 			
-			outToServer2.writeBytes(String.format("Hello:przemek\n"));
+			// Send handshake
+			outToServer2.writeBytes(String.format("Hello:%s\n", login));
 			
 //			new Thread(() -> {
 //				String fromServer;
+//				
+//				// Receive all tickets 
 //				try {
 //					fromServer = inFromServer.readLine();
 //					System.out.println(fromServer);
+//					Matcher matcher = ticketPattern.matcher(fromServer);
+//					
+//					while(matcher.find()) {
+//						String ticketId = matcher.group(1);
+//						System.out.println("id: " + ticketId);
+//						TicketBuilder.getBuilder().setId(Integer.valueOf(ticketId));
+//					}
+//					
 //				} catch (IOException e1) {
 //					logger.severe(e1.getMessage());
 //				}
@@ -53,17 +85,58 @@ public class TCPClient {
 //				}
 //			}).start();
 			
-			ThreadFactory threadFactory = new ReserveTicketFactory();
-			ReserveTicket callable = new ReserveTicket(outToServer2, port);
-			Task futureTask = new Task(callable);
-
-//			Executors.newSingleThreadExecutor(threadFactory).submit(futureTask);
-//			Executors.newSingleThreadExecutor().execute(futureTask);
-//			Executors.newSingleThreadExecutor(Executors.defaultThreadFactory()).execute(futureTask);
+			Executors.newSingleThreadExecutor().execute(() -> {
+				String fromServer;
+				
+				// Receive all tickets 
+				try {
+					fromServer = inFromServer.readLine();
+					System.out.println(fromServer);
+					Matcher matcher = ticketPattern.matcher(fromServer);
+					
+					abort = true;
+					while(matcher.find()) {
+						abort = false;
+						String ticketId = matcher.group(1);
+						tickets.add(new GroupBuilder().setId(Integer.valueOf(ticketId)).build());
+					}
+					waitForReponse = false;
+					
+				} catch (IOException e1) {
+					logger.severe(e1.getMessage());
+				}
+				
+				String stringFromServer;
+				while(!clientSocket.isClosed() && !clientSocket.isInputShutdown()) {
+					try {
+						if ((stringFromServer = inFromServer.readLine()) != null) {
+							logger.info(String.format("Received from server: %s", stringFromServer));
+							
+							Matcher matcher = okPattern.matcher(stringFromServer);
+							if (matcher.find()) {
+								int ticketId = Integer.valueOf(matcher.group(1));
+								outToServer2.writeBytes("bye\n");
+							} else {
+								System.out.println("Again");
+								Executors.newSingleThreadExecutor(threadFactory).execute(futureTask);
+							}
+						} else {
+							break;
+						}
+					} catch (IOException e) {
+						logger.severe(e.getMessage()); 
+					}
+				}
+			});
+			
+			while (waitForReponse);
+			
+			if (abort) {
+				clientSocket.close();
+				return;
+			}
+			
 			Executors.newSingleThreadExecutor(threadFactory).execute(futureTask);
-//			Executors.newSingleThreadExecutor(
-//					new ReserveTicketFactory()).submit(
-//							new Task(new ReserveTicket(outToServer)));
 			
 		} catch (Exception e) {
 			logger.severe(e.getMessage());
