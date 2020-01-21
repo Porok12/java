@@ -38,7 +38,7 @@ public class ClientGenrator {
 					login = "Random";
 				}
 				TCPClient client = new TCPClient(port, login);
-				client.reserveTicket();
+				client.reserve();
 			} catch (Exception e) {
 				logger.warning(e.getMessage());
 			}

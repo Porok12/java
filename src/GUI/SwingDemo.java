@@ -69,9 +69,9 @@ public class SwingDemo {
 				secondFrameOpended = true;
 			}     
 		});
-		JLabel ticketLabel = new JLabel("Pokoje: ");
-		SpinnerNumberModel ticketModel = new SpinnerNumberModel(3, 1, 9, 1);
-		groupSpinner = new JSpinner(ticketModel);
+		JLabel groupLabel = new JLabel("Pokoje: ");
+		SpinnerNumberModel groupModel = new SpinnerNumberModel(3, 1, 9, 1);
+		groupSpinner = new JSpinner(groupModel);
 		
 		JLabel capacityLabel = new JLabel("Pojemność: ");
 		SpinnerNumberModel capacityModel = new SpinnerNumberModel(3, 1, 9, 1);
@@ -89,7 +89,7 @@ public class SwingDemo {
 		SpinnerNumberModel slotsModel = new SpinnerNumberModel(4, 1, 9, 1);
 		slotsSpinner = new JSpinner(slotsModel);
 		
-		firstFrame.add(ticketLabel);
+		firstFrame.add(groupLabel);
 		firstFrame.add(groupSpinner);
 		firstFrame.add(capacityLabel);
 		firstFrame.add(capacitySpinner);

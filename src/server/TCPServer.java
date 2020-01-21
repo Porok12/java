@@ -30,7 +30,7 @@ public class TCPServer {
 	private final int GROUPS;
 	private final int MAX_SLOTS;
 	private final int TIMEOUT;
-	private Group[] ticketArray;
+	private Group[] groupArray;
 	private ServerSocket serverSocket;
 	private BlockingQueue<ClientThread> clientsQueue;
 	private ReadWriteLock rwlock;
@@ -40,12 +40,12 @@ public class TCPServer {
 		GROUPS = groups;
 		MAX_SLOTS = slots;
 		TIMEOUT = timeout;
-		ticketArray = new Group[GROUPS];
+		groupArray = new Group[GROUPS];
 		rwlock = new ReentrantReadWriteLock();
 		
 		clientsQueue = new ArrayBlockingQueue<ClientThread>(MAX_SLOTS);
 		for (int i = 0; i < GROUPS; i++) {
-			ticketArray[i] = new GroupBuilder().setId(i).setCapacity(capacity).buildAndAddToSwing();
+			groupArray[i] = new GroupBuilder().setId(i).setCapacity(capacity).buildAndAddToSwing();
 		}
 
 		try {
@@ -89,12 +89,12 @@ public class TCPServer {
 		closeSocket();
 	}
 	
-	public boolean notEmpty(int ticketId) {
+	public boolean notEmpty(int groupId) {
 		Lock readLock = rwlock.readLock();
 		readLock.lock();
 		try {
 			Thread.sleep(1000);
-			return ticketArray[ticketId].getStatus() == Group.Status.AVAILABLE;
+			return groupArray[groupId].getStatus() == Group.Status.AVAILABLE;
 		} catch (InterruptedException e) {
 			logger.info(e.getMessage());
 		} finally {
@@ -104,12 +104,12 @@ public class TCPServer {
 		return false;
 	}
 	
-	public boolean addUserToGroup(int ticketId, String login) {
+	public boolean addUserToGroup(int groupId, String login) {
 		Lock writeLock = rwlock.writeLock();
 		writeLock.lock();
 		try {
 			Thread.sleep(1000);
-			return ticketArray[ticketId].addUser(login);
+			return groupArray[groupId].addUser(login);
 		} catch (InterruptedException e) {
 			logger.info(e.getMessage());
 		} finally {
@@ -124,7 +124,7 @@ public class TCPServer {
 			new FutureTask<Void>(new Callable<Void>() {
 				@Override
 				public Void call() throws Exception {
-					ClientThread clientThread = new ClientThread(socket, ticketArray, server);
+					ClientThread clientThread = new ClientThread(socket, groupArray, server);
 					clientsQueue.put(clientThread);
 					logger.info("Client added");
 					clientThread.start();

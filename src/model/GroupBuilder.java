@@ -19,11 +19,11 @@ public class GroupBuilder {
 	}
 	
 	public Group buildAndAddToSwing() {
-		Group newTicket = new Group(group);
-		SwingDemo.panel.add(new JList<String>(newTicket.getUsers()));
+		Group newGroup = new Group(group);
+		SwingDemo.panel.add(new JList<String>(newGroup.getUsers()));
 		SwingDemo.panel.validate();
 		SwingDemo.panel.repaint();
-		return newTicket;
+		return newGroup;
 	}
 	
 	public GroupBuilder setId(int id) {

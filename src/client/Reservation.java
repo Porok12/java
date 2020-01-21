@@ -17,7 +17,7 @@ public class Reservation implements Callable<Void> {
 	
 	public Reservation(DataOutputStream outToServer, int port, List<Group> groups) 
 			throws UnknownHostException, IOException {
-		logger.info(String.format("ReserveTicket created %d", port));
+		logger.info(String.format("Port %d", port));
 		this.outToServer = outToServer;
 		this.groups = groups;
 	}
@@ -26,10 +26,10 @@ public class Reservation implements Callable<Void> {
 	public Void call() {
 		logger.info(groups.toString());
 		try {
-			Group ticket = groups.get(new Random().nextInt(groups.size()));
+			Group group = groups.get(new Random().nextInt(groups.size()));
 			{
 				Thread.sleep(1000);
-				String writeToServerString = String.format("reserve:%d", ticket.getId());
+				String writeToServerString = String.format("reserve:%d", group.getId());
 				outToServer.writeBytes(writeToServerString + '\n');
 				logger.info(String.format("Write to server: %s", writeToServerString));
 			}

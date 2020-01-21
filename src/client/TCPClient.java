@@ -27,9 +27,9 @@ public class TCPClient {
 	private volatile boolean waitForReponse = true;
 
 	private static final Logger logger = Logger.getLogger(TCPClient.class.getName());
-	private static final Pattern ticketPattern = Pattern.compile("(?i)Ticket([0-9]+)");
+	private static final Pattern groupPattern = Pattern.compile("(?i)Group([0-9]+)");
 	private static final Pattern okPattern = Pattern.compile("(?i)ok([0-9]+)");
-	private List<Group> tickets = new ArrayList<>();
+	private List<Group> groups = new ArrayList<>();
 	
 	private int port;
 	private String login;
@@ -40,13 +40,13 @@ public class TCPClient {
 		this.login = login;
 	}
 	
-	public void reserveTicket() {
+	public void reserve() {
 		try {
 			Socket clientSocket = new Socket("localhost", port);
 			DataOutputStream outToServer2 = new DataOutputStream(clientSocket.getOutputStream());
 			BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 			ThreadFactory threadFactory = new ReservationFactory();
-			Reservation callable = new Reservation(outToServer2, port, tickets);
+			Reservation callable = new Reservation(outToServer2, port, groups);
 			Task futureTask = new Task(callable);
 			
 			// Send handshake
@@ -88,17 +88,17 @@ public class TCPClient {
 			Executors.newSingleThreadExecutor().execute(() -> {
 				String fromServer;
 				
-				// Receive all tickets 
+				// Receive all groups 
 				try {
 					fromServer = inFromServer.readLine();
 					System.out.println(fromServer);
-					Matcher matcher = ticketPattern.matcher(fromServer);
+					Matcher matcher = groupPattern.matcher(fromServer);
 					
 					abort = true;
 					while(matcher.find()) {
 						abort = false;
-						String ticketId = matcher.group(1);
-						tickets.add(new GroupBuilder().setId(Integer.valueOf(ticketId)).build());
+						String groupId = matcher.group(1);
+						groups.add(new GroupBuilder().setId(Integer.valueOf(groupId)).build());
 					}
 					waitForReponse = false;
 					
@@ -114,7 +114,7 @@ public class TCPClient {
 							
 							Matcher matcher = okPattern.matcher(stringFromServer);
 							if (matcher.find()) {
-								int ticketId = Integer.valueOf(matcher.group(1));
+								int groupId = Integer.valueOf(matcher.group(1));
 								outToServer2.writeBytes("bye\n");
 							} else {
 								System.out.println("Again");

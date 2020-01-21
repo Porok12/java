@@ -42,7 +42,7 @@ public class Group {
 
 	@Override
 	public String toString() {
-		return String.format("Ticket%d", id);
+		return String.format("Group%d", id);
 	}
 	
 	public static enum Status {
